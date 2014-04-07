@@ -115,14 +115,14 @@ static NSString *const FXFormFieldTypeImage = @"image";
 #pragma mark Controllers
 
 
-@protocol FXFormControllerDelegate <UITableViewDelegate>
+@protocol FXFormControllerDelegate <UICollectionViewDelegate>
 
 @end
 
 
 @interface FXFormController : NSObject
 
-@property (nonatomic, strong) IBOutlet UITableView *tableView;
+@property (nonatomic, strong) IBOutlet UICollectionView *tableView;
 @property (nonatomic, strong) FXFormController *parentFormController;
 @property (nonatomic, weak) id<FXFormControllerDelegate> delegate;
 @property (nonatomic, strong) id<FXForm> form;
@@ -154,7 +154,7 @@ static NSString *const FXFormFieldTypeImage = @"image";
 @interface FXFormViewController : UIViewController <FXFormFieldViewController, FXFormControllerDelegate>
 
 @property (nonatomic, readonly) FXFormController *formController;
-@property (nonatomic, strong) IBOutlet UITableView *tableView;
+@property (nonatomic, strong) IBOutlet UICollectionView *tableView;
 
 @end
 
@@ -171,12 +171,12 @@ static NSString *const FXFormFieldTypeImage = @"image";
 
 + (CGFloat)heightForField:(FXFormField *)field width:(CGFloat)width;
 + (CGFloat)heightForField:(FXFormField *)field;
-- (void)didSelectWithTableView:(UITableView *)tableView controller:(UIViewController *)controller;
+- (void)didSelectWithTableView:(UICollectionView *)tableView controller:(UIViewController *)controller;
 
 @end
 
 
-@interface FXFormBaseCell : UITableViewCell <FXFormFieldCell>
+@interface FXFormBaseCell : UICollectionViewCell <FXFormFieldCell>
 
 @end
 

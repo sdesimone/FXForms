@@ -343,7 +343,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 }
 
 
-@interface FXFormController () <UITableViewDataSource, UITableViewDelegate>
+@interface FXFormController () <UICollectionViewDataSource, UICollectionViewDelegate>
 
 @property (nonatomic, copy) NSArray *sections;
 @property (nonatomic, strong) NSMutableDictionary *cellClassesForFieldTypes;
@@ -1158,7 +1158,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     [invocation invokeWithTarget:self.delegate];
 }
 
-- (void)setTableView:(UITableView *)tableView
+- (void)setTableView:(UICollectionView *)tableView
 {
     _tableView = tableView;
     self.tableView.dataSource = self;
@@ -1259,27 +1259,70 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 #pragma mark -
 #pragma mark Datasource methods
 
-- (NSInteger)numberOfSectionsInTableView:(__unused UITableView *)tableView
+- (NSInteger)numberOfSectionsInCollectionView:(__unused UICollectionView *)collectionView {
+    
+    return [self numberOfSections];
+}
+
+- (NSInteger)collectionView:(__unused UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
+    
+    return [self sectionAtIndex:section].header;
+}
+
+- (UICollectionViewCell*)collectionView:(__unused UICollectionView*)collectionView
+                  cellForItemAtIndexPath:(NSIndexPath*)indexPath {
+    
+    FXFormField *field = [self fieldForIndexPath:indexPath];
+    
+    //-- don't recycle cells - it would make things complicated
+    Class cellClass = field.cell ?: [self cellClassForField:field];
+    NSString *nibName = NSStringFromClass(cellClass);
+    if ([[NSBundle mainBundle] pathForResource:nibName ofType:@"nib"])
+    {
+        //load cell from nib
+        return [[[NSBundle mainBundle] loadNibNamed:nibName owner:nil options:nil] firstObject];
+    }
+    else
+    {
+//        //hackity-hack-hack
+//        UICollectionViewCellStyle style = UICollectionViewCellStyleDefault;
+//        if ([field valueForKeyPath:@"style"])
+//        {
+//            style = [[field valueForKeyPath:@"style"] integerValue];
+//        }
+//        else if (FXFormCanGetValueForKey(field.form, field.key))
+//        {
+//            style = UICollectionViewCellStyleValue1;
+//        }
+        
+        //-- don't recycle cells - it would make things complicated
+//        return [[cellClass alloc] initWithStyle:style reuseIdentifier:nil];
+        return [[cellClass alloc] init];
+    }
+}
+
+/*
+- (NSInteger)numberOfSectionsInTableView:(__unused UICollectionView *)tableView
 {
     return [self numberOfSections];
 }
 
-- (NSString *)tableView:(__unused UITableView *)tableView titleForHeaderInSection:(NSInteger)index
+- (NSString *)tableView:(__unused UICollectionView *)tableView titleForHeaderInSection:(NSInteger)index
 {
     return [self sectionAtIndex:index].header;
 }
 
-- (NSString *)tableView:(__unused UITableView *)tableView titleForFooterInSection:(NSInteger)index
+- (NSString *)tableView:(__unused UICollectionView *)tableView titleForFooterInSection:(NSInteger)index
 {
     return [self sectionAtIndex:index].footer;
 }
 
-- (NSInteger)tableView:(__unused UITableView *)tableView numberOfRowsInSection:(NSInteger)index
+- (NSInteger)tableView:(__unused UICollectionView *)tableView numberOfRowsInSection:(NSInteger)index
 {
     return [self numberOfFieldsInSection:index];
 }
 
-- (CGFloat)tableView:(__unused UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+- (CGFloat)tableView:(__unused UICollectionView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
     Class cellClass = field.cell ?: [self cellClassForField:field];
@@ -1294,7 +1337,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     return self.tableView.rowHeight;
 }
 
-- (UITableViewCell *)tableView:(__unused UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+- (UICollectionViewCell *)tableView:(__unused UICollectionView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
 
@@ -1309,25 +1352,25 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     else
     {
         //hackity-hack-hack
-        UITableViewCellStyle style = UITableViewCellStyleDefault;
+        UICollectionViewCellStyle style = UICollectionViewCellStyleDefault;
         if ([field valueForKeyPath:@"style"])
         {
             style = [[field valueForKeyPath:@"style"] integerValue];
         }
         else if (FXFormCanGetValueForKey(field.form, field.key))
         {
-            style = UITableViewCellStyleValue1;
+            style = UICollectionViewCellStyleValue1;
         }
 
         //don't recycle cells - it would make things complicated
         return [[cellClass alloc] initWithStyle:style reuseIdentifier:nil];
     }
 }
-
+*/
 #pragma mark -
 #pragma mark Delegate methods
-
-- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+/*
+- (void)tableView:(UICollectionView*)tableView willDisplayCell:(UICollectionViewCell*)cell forRowAtIndexPath:(NSIndexPath*)indexPath
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
 
@@ -1342,14 +1385,14 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     //forward to delegate
     if ([self.delegate respondsToSelector:_cmd])
     {
-        [self.delegate tableView:tableView willDisplayCell:cell forRowAtIndexPath:indexPath];
+        [self.delegate collection:tableView willDisplayCell:cell forRowAtIndexPath:indexPath];
     }
 }
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+*/
+- (void)tableView:(UICollectionView *)tableView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     //forward to cell
-    UITableViewCell<FXFormFieldCell> *cell = (UITableViewCell<FXFormFieldCell> *)[tableView cellForRowAtIndexPath:indexPath];
+    UICollectionViewCell<FXFormFieldCell> *cell = (UICollectionViewCell<FXFormFieldCell> *)[tableView cellForItemAtIndexPath:indexPath];
     if ([cell respondsToSelector:@selector(didSelectWithTableView:controller:)])
     {
         [cell didSelectWithTableView:tableView controller:[self tableViewController]];
@@ -1358,7 +1401,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     //forward to delegate
     if ([self.delegate respondsToSelector:_cmd])
     {
-        [self.delegate tableView:tableView didSelectRowAtIndexPath:indexPath];
+        [self.delegate collectionView:tableView didSelectItemAtIndexPath:indexPath];
     }
 }
 
@@ -1377,18 +1420,18 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 #pragma mark -
 #pragma mark Keyboard events
 
-- (UITableViewCell *)cellContainingView:(UIView *)view
+- (UICollectionViewCell *)cellContainingView:(UIView *)view
 {
-    if (view == nil || [view isKindOfClass:[UITableViewCell class]])
+    if (view == nil || [view isKindOfClass:[UICollectionViewCell class]])
     {
-        return (UITableViewCell *)view;
+        return (UICollectionViewCell *)view;
     }
     return [self cellContainingView:view.superview];
 }
 
 - (void)keyboardWillShow:(NSNotification *)note
 {
-    UITableViewCell *cell = [self cellContainingView:FXFormsFirstResponder(self.tableView)];
+    UICollectionViewCell *cell = [self cellContainingView:FXFormsFirstResponder(self.tableView)];
     if (cell)
     {
         NSDictionary *keyboardInfo = [note userInfo];
@@ -1409,14 +1452,14 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
         self.tableView.contentInset = tableContentInset;
         self.tableView.scrollIndicatorInsets = tableScrollIndicatorInsets;
         NSIndexPath *selectedRow = [self.tableView indexPathForCell:cell];
-        [self.tableView scrollToRowAtIndexPath:selectedRow atScrollPosition:UITableViewScrollPositionBottom animated:NO];
+        [self.tableView scrollToItemAtIndexPath:selectedRow atScrollPosition:UICollectionViewScrollPositionBottom animated:NO];
         [UIView commitAnimations];
     }
 }
 
 - (void)keyboardWillHide:(NSNotification *)note
 {
-    UITableViewCell *cell = [self cellContainingView:FXFormsFirstResponder(self.tableView)];
+    UICollectionViewCell *cell = [self cellContainingView:FXFormsFirstResponder(self.tableView)];
     if (cell)
     {
         NSDictionary *keyboardInfo = [note userInfo];
@@ -1489,8 +1532,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     
     if (!self.tableView)
     {
-        self.tableView = [[UITableView alloc] initWithFrame:[UIScreen mainScreen].applicationFrame
-                                                      style:UITableViewStyleGrouped];
+        self.tableView = [[UICollectionView alloc] initWithFrame:[UIScreen mainScreen].applicationFrame
+                                            collectionViewLayout:[UICollectionViewFlowLayout new]];
     }
     if (!self.tableView.superview)
     {
@@ -1498,7 +1541,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     }
 }
 
-- (void)setTableView:(UITableView *)tableView
+- (void)setTableView:(UICollectionView *)tableView
 {
     self.formController.tableView = tableView;
     if (![self isViewLoaded])
@@ -1507,7 +1550,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     }
 }
 
-- (UITableView *)tableView
+- (UICollectionView *)tableView
 {
     return self.formController.tableView;
 }
@@ -1516,12 +1559,15 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     [super viewWillAppear:animated];
     
-    NSIndexPath *selected = [self.tableView indexPathForSelectedRow];
+    NSIndexPath* selected = nil;
+    NSArray *selectedItems = [self.tableView indexPathsForSelectedItems];
+    if ([selectedItems count] > 0)
+        selected = [selectedItems lastObject];
     if (selected)
     {
         [self.tableView reloadData];
-        [self.tableView selectRowAtIndexPath:selected animated:NO scrollPosition:UITableViewScrollPositionNone];
-        [self.tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
+        [self.tableView selectItemAtIndexPath:selected animated:NO scrollPosition:UICollectionViewScrollPositionNone];
+        [self.tableView selectItemAtIndexPath:nil animated:YES scrollPosition:UICollectionViewScrollPositionNone];
     }
 }
 
@@ -1535,6 +1581,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 @interface FXFormBaseCell ()
 
 @property (nonatomic, strong) UITextField *textField;
+@property (nonatomic, strong) UILabel *textLabel;
+@property (nonatomic, strong) UILabel *detailTextLabel;
 
 @end
 
@@ -1543,9 +1591,9 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 @synthesize field = _field;
 
-- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+- (id)init
 {
-    if ((self = [super initWithStyle:style reuseIdentifier:reuseIdentifier ?: NSStringFromClass([self class])]))
+    if ((self = [super init]))
     {
         self.textLabel.font = [UIFont boldSystemFontOfSize:17];
         FXFormLabelSetMinFontSize(self.textLabel, FXFormFieldMinFontSize);
@@ -1583,54 +1631,54 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     self.detailTextLabel.text = [self.field fieldDescription] ?: [self.field.placeholder fieldDescription];
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 7.0)
     {
-        self.selectionStyle = UITableViewCellSelectionStyleDefault;
+//        self.selectionStyle = UICollectionViewCellSelectionStyleDefault;
     }
     else
     {
-        self.selectionStyle = UITableViewCellSelectionStyleBlue;
+//        self.selectionStyle = UICollectionViewCellSelectionStyleBlue;
     }
     
     if ([self.field.valueClass conformsToProtocol:@protocol(FXForm)] ||
         [self.field.valueClass isSubclassOfClass:[UIViewController class]] ||
         [self.field.options count] || self.field.viewController)
     {
-        self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+//        self.accessoryType = UICollectionViewCellAccessoryDisclosureIndicator;
     }
     else if ([self.field.type isEqualToString:FXFormFieldTypeBoolean] || [self.field.type isEqualToString:FXFormFieldTypeOption])
     {
         self.detailTextLabel.text = nil;
-        self.accessoryType = [self.field.value boolValue]? UITableViewCellAccessoryCheckmark: UITableViewCellAccessoryNone;
+//        self.accessoryType = [self.field.value boolValue]? UICollectionViewCellAccessoryCheckmark: UICollectionViewCellAccessoryNone;
     }
     else if (self.field.action)
     {
-        self.accessoryType = UITableViewCellAccessoryNone;
+//        self.accessoryType = UICollectionViewCellAccessoryNone;
         self.textLabel.textAlignment = UITextAlignmentCenter;
     }
     else
     {
-        self.accessoryType = UITableViewCellAccessoryNone;
-        self.selectionStyle = UITableViewCellSelectionStyleNone;
+//        self.accessoryType = UICollectionViewCellAccessoryNone;
+//        self.selectionStyle = UICollectionViewCellSelectionStyleNone;
     }
 }
 
-- (UITableView *)tableView
+- (UICollectionView *)tableView
 {
-    UITableView *view = (UITableView *)[self superview];
-    while (![view isKindOfClass:[UITableView class]])
+    UICollectionView *view = (UICollectionView *)[self superview];
+    while (![view isKindOfClass:[UICollectionView class]])
     {
-        view = (UITableView *)[view superview];
+        view = (UICollectionView *)[view superview];
     }
     return view;
 }
 
 - (NSIndexPath *)indexPathForNextCell
 {
-    UITableView *tableView = [self tableView];
+    UICollectionView *tableView = [self tableView];
     NSIndexPath *indexPath = [tableView indexPathForCell:self];
     if (indexPath)
     {
         //get next indexpath
-        if ([tableView numberOfRowsInSection:indexPath.section] > indexPath.row + 1)
+        if ([tableView numberOfItemsInSection:indexPath.section] > indexPath.row + 1)
         {
             return [NSIndexPath indexPathForRow:indexPath.row + 1 inSection:indexPath.section];
         }
@@ -1642,43 +1690,43 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     return nil;
 }
 
-- (UITableViewCell <FXFormFieldCell> *)nextCell
+- (UICollectionViewCell <FXFormFieldCell> *)nextCell
 {
-    UITableView *tableView = [self tableView];
+    UICollectionView *tableView = [self tableView];
     NSIndexPath *indexPath = [self indexPathForNextCell];
     if (indexPath)
     {
         //get next cell
-        return (UITableViewCell <FXFormFieldCell> *)[tableView cellForRowAtIndexPath:indexPath];
+        return (UICollectionViewCell <FXFormFieldCell> *)[tableView cellForItemAtIndexPath:indexPath];
     }
     return nil;
 }
 
-- (void)didSelectWithTableView:(UITableView *)tableView controller:(UIViewController *)controller
+- (void)didSelectWithTableView:(UICollectionView *)tableView controller:(UIViewController *)controller
 {
     if (self.field.action)
     {
         [FXFormsFirstResponder(tableView) resignFirstResponder];
         if (self.field.action) self.field.action(self);
-        [tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
+        [tableView selectItemAtIndexPath:nil animated:YES scrollPosition:UICollectionViewScrollPositionNone];
     }
     else if ([self.field.type isEqualToString:FXFormFieldTypeBoolean] || [self.field.type isEqualToString:FXFormFieldTypeOption])
     {
         self.field.value = @(![self.field.value boolValue]);
-        self.accessoryType = [self.field.value boolValue]? UITableViewCellAccessoryCheckmark: UITableViewCellAccessoryNone;
+//        self.accessoryType = [self.field.value boolValue]? UICollectionViewCellAccessoryCheckmark: UICollectionViewCellAccessoryNone;
         if ([self.field.type isEqualToString:FXFormFieldTypeOption])
         {
             NSIndexPath *indexPath = [tableView indexPathForCell:self];
             if (indexPath)
             {
                 //reload entire section, in case fields are linked
-                [tableView reloadSections:[NSIndexSet indexSetWithIndex:indexPath.section] withRowAnimation:UITableViewRowAnimationAutomatic];
+                [tableView reloadSections:[NSIndexSet indexSetWithIndex:indexPath.section]];
             }
         }
         else
         {
             //deselect the cell
-            [tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
+            [tableView selectItemAtIndexPath:nil animated:YES scrollPosition:UICollectionViewScrollPositionNone];
         }
     }
     else if (self.field.viewController || [self.field.options count] || [self.field.valueClass conformsToProtocol:@protocol(FXForm)])
@@ -1713,7 +1761,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (void)setUp
 {
-    self.selectionStyle = UITableViewCellSelectionStyleNone;
+//    self.selectionStyle = UICollectionViewCellSelectionStyleNone;
     self.textLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
     
     self.textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 21)];
@@ -1874,7 +1922,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     {
         //get return key type
         UIReturnKeyType returnKeyType = UIReturnKeyDone;
-        UITableViewCell <FXFormFieldCell> *nextCell = [self nextCell];
+        UICollectionViewCell <FXFormFieldCell> *nextCell = [self nextCell];
         if ([nextCell canBecomeFirstResponder])
         {
             returnKeyType = UIReturnKeyNext;
@@ -1931,7 +1979,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (void)setUp
 {
-    self.selectionStyle = UITableViewCellSelectionStyleNone;
+//    self.selectionStyle = UICollectionViewCellSelectionStyleNone;
     self.textLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
     
     self.textView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 320, 21)];
@@ -2085,8 +2133,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     [super setUp];
     
-    self.selectionStyle = UITableViewCellSelectionStyleNone;
-    self.accessoryView = [[UISwitch alloc] init];
+//    self.selectionStyle = UICollectionViewCellSelectionStyleNone;
+//    self.accessoryView = [[UISwitch alloc] init];
     [self.switchControl addTarget:self action:@selector(valueChanged) forControlEvents:UIControlEventValueChanged];
 }
 
@@ -2098,7 +2146,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (UISwitch *)switchControl
 {
-    return (UISwitch *)self.accessoryView;
+    return nil;
+//    return (UISwitch *)self.accessoryView;
 }
 
 - (void)valueChanged
@@ -2125,8 +2174,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
         wrapper.frame = CGRectMake(0, 0, wrapper.frame.size.width + FXFormFieldPaddingRight, wrapper.frame.size.height);
     }
     
-    self.selectionStyle = UITableViewCellSelectionStyleNone;
-    self.accessoryView = wrapper;
+//    self.selectionStyle = UICollectionViewCellSelectionStyleNone;
+//    self.accessoryView = wrapper;
     [self.stepper addTarget:self action:@selector(valueChanged) forControlEvents:UIControlEventValueChanged];
 }
 
@@ -2140,7 +2189,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (UIStepper *)stepper
 {
-    return (UIStepper *)[self.accessoryView.subviews firstObject];
+    return nil;
+//    return (UIStepper *)[self.accessoryView.subviews firstObject];
 }
 
 - (void)valueChanged
@@ -2170,7 +2220,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     [self.slider addTarget:self action:@selector(valueChanged) forControlEvents:UIControlEventValueChanged];
     [self.contentView addSubview:self.slider];
     
-    self.selectionStyle = UITableViewCellSelectionStyleNone;
+//    self.selectionStyle = UICollectionViewCellSelectionStyleNone;
 }
 
 - (void)layoutSubviews
@@ -2258,10 +2308,10 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     if (self.field.action) self.field.action(self);
 }
 
-- (void)didSelectWithTableView:(UITableView *)tableView controller:(__unused UIViewController *)controller
+- (void)didSelectWithTableView:(UICollectionView *)tableView controller:(__unused UIViewController *)controller
 {
     [self becomeFirstResponder];
-    [tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
+    [tableView selectItemAtIndexPath:nil animated:YES scrollPosition:UICollectionViewScrollPositionNone];
 }
 
 @end
@@ -2280,12 +2330,12 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     [super setUp];
     
-    self.selectionStyle = UITableViewCellSelectionStyleNone;
+//    self.selectionStyle = UICollectionViewCellSelectionStyleNone;
     
     UIImageView *imageView = [[UIImageView alloc] init];
     imageView.contentMode = UIViewContentModeScaleAspectFill;
     imageView.clipsToBounds = YES;
-    self.accessoryView = imageView;
+//    self.accessoryView = imageView;
     [self layoutSubviews];
 }
 
@@ -2338,7 +2388,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (UIImageView *)imagePickerView
 {
-    return (UIImageView *)self.accessoryView;
+    return nil;
+//    return (UIImageView *)self.accessoryView;
 }
 
 - (BOOL)setSourceType:(UIImagePickerControllerSourceType)sourceType
@@ -2351,10 +2402,10 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     return NO;
 }
 
-- (void)didSelectWithTableView:(UITableView *)tableView controller:(UIViewController *)controller
+- (void)didSelectWithTableView:(UICollectionView *)tableView controller:(UIViewController *)controller
 {
     [self becomeFirstResponder];
-    [tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
+    [tableView selectItemAtIndexPath:nil animated:YES scrollPosition:UICollectionViewScrollPositionNone];
     [controller presentViewController:self.imagePickerController animated:YES completion:NULL];
 }
 
@@ -2423,10 +2474,10 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     return self.pickerView;
 }
 
-- (void)didSelectWithTableView:(UITableView *)tableView controller:(__unused UIViewController *)controller
+- (void)didSelectWithTableView:(UICollectionView *)tableView controller:(__unused UIViewController *)controller
 {
     [self becomeFirstResponder];
-    [tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
+    [tableView selectItemAtIndexPath:nil animated:YES scrollPosition:UICollectionViewScrollPositionNone];
 }
 
 - (NSInteger)numberOfComponentsInPickerView:(__unused UIPickerView *)pickerView

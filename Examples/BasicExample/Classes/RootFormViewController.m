@@ -34,7 +34,7 @@
     [[[UIAlertView alloc] initWithTitle:@"Login Form Submitted" message:nil delegate:nil cancelButtonTitle:nil otherButtonTitles:@"OK", nil] show];
 }
 
-- (void)submitRegistrationForm:(UITableViewCell<FXFormFieldCell> *)cell
+- (void)submitRegistrationForm:(UICollectionViewCell<FXFormFieldCell> *)cell
 {
     //we can lookup the form from the cell if we want, like this:
     RegistrationForm *form = cell.field.form;
